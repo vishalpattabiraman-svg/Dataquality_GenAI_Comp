@@ -37,7 +37,9 @@ const buildPrompt = (inputs: DataQualityInputs): string => {
     Your job is to analyze the following metadata and data profile reports to detect potential data quality issues, such as anomalies, null spikes, schema drift, or type mismatches.
     
     Analyze the following inputs to identify issues, rate their severity, suggest a cause, predict the impact, and recommend a solution.
-    For each identified issue, you MUST specify the 'table_name' it pertains to, using the name provided in the input.
+    For each identified issue, you MUST specify the 'table_name' it pertains to, using the name provided in the input. If an issue is specific to a single column, you MUST also provide the 'column_name'.
+
+    IMPORTANT: If an issue is a direct violation of one of the provided business rules (either from a table's "Business rules" section or the "Global business rules"), you MUST set the issue's 'type' to exactly "Business Rule Violation". For all other issues (like schema drift, anomalies, null spikes, etc.), use a descriptive type other than "Business Rule Violation".
 
     **Inputs:**
 
@@ -80,9 +82,13 @@ export const analyzeDataQuality = async (inputs: DataQualityInputs): Promise<Gem
                   type: Type.STRING,
                   description: 'The name of the table where the issue was found.',
                 },
+                column_name: {
+                  type: Type.STRING,
+                  description: 'The name of the column where the issue was found, if applicable.',
+                },
                 type: {
                   type: Type.STRING,
-                  description: 'The type of issue, e.g., "Schema Drift", "Anomaly".',
+                  description: 'The type of issue, e.g., "Schema Drift", "Anomaly", "Business Rule Violation".',
                 },
                 description: {
                   type: Type.STRING,

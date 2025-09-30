@@ -15,6 +15,7 @@ export interface DataQualityInputs {
 
 export interface Issue {
   table_name: string;
+  column_name?: string;
   type: string;
   description: string;
   severity: 'Low' | 'Medium' | 'High';

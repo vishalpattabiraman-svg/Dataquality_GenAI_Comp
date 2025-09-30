@@ -21,8 +21,14 @@ const InfoSection: React.FC<{ icon: React.ReactNode; title: string; children: Re
 const IssueCard: React.FC<IssueCardProps> = ({ issue, isInitiallyExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
 
+  const severityStyles = {
+    High: 'border-l-4 border-severity-high',
+    Medium: 'border-l-4 border-severity-medium',
+    Low: 'border-l-4 border-severity-low',
+  };
+
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm transition-shadow duration-300 hover:shadow-md">
+    <div className={`bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm transition-shadow duration-300 hover:shadow-md ${severityStyles[issue.severity]}`}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full text-left p-4 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-opacity-50 rounded-lg"
