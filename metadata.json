@@ -1,0 +1,5 @@
+{
+  "name": "Data Quality Bot",
+  "description": "An intelligent bot that analyzes data metadata and profile reports to detect potential data quality issues like anomalies, schema drift, and type mismatches, providing actionable recommendations.",
+  "requestFramePermissions": []
+}
