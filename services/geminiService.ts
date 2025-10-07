@@ -7,6 +7,47 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * A helper function that wraps a Gemini API call with a retry mechanism,
+ * featuring exponential backoff for handling 429 rate limit errors.
+ * @param model The model to use for generation.
+ * @param contents The prompt/contents for the model.
+ * @param config The generation configuration.
+ * @param retries The maximum number of retry attempts.
+ * @param initialDelayMs The initial delay before the first retry.
+ * @returns The API response on success.
+ * @throws The last captured error if all retries fail.
+ */
+const generateContentWithRetry = async (
+  model: string,
+  contents: string,
+  config: any,
+  retries = 3,
+  initialDelayMs = 4000
+): Promise<any> => {
+  let lastError: any = null;
+  let delayMs = initialDelayMs;
+
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await ai.models.generateContent({ model, contents, config });
+      return response;
+    } catch (e) {
+      lastError = e;
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+        console.warn(`Rate limit hit. Retrying in ${delayMs}ms... (Attempt ${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        delayMs *= 2; // Exponential backoff
+      } else {
+        // Not a rate limit error, re-throw immediately
+        throw e;
+      }
+    }
+  }
+  throw lastError;
+};
+
 // New function to build prompt for a single table
 const buildSingleTablePrompt = (table: TableInput, globalRules: string, history: string): string => {
   const tablePrompt = `
@@ -116,16 +157,16 @@ const analyzeSingleTable = async (table: TableInput, globalRules: string, histor
   const prompt = buildSingleTablePrompt(table, globalRules, history);
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
+    const response = await generateContentWithRetry(
+      'gemini-2.5-flash',
+      prompt,
+      {
         temperature: 0,
         seed: 42,
         responseMimeType: 'application/json',
         responseSchema: responseSchema,
-      },
-    });
+      }
+    );
     
     const jsonText = response.text.trim();
     const result = JSON.parse(jsonText) as GeminiApiResponse;
@@ -139,7 +180,7 @@ const analyzeSingleTable = async (table: TableInput, globalRules: string, histor
 
     return result;
   } catch (e) {
-    console.error(`Error analyzing table "${table.name}":`, e);
+    console.error(`Error analyzing table "${table.name}" after all retries:`, e);
     // Return an empty result for this table to not fail the entire batch
     return { issues_detected: [] };
   }
@@ -156,16 +197,16 @@ export const analyzeDataQuality = async (inputs: DataQualityInputs): Promise<Gem
 
   const allIssues: Issue[] = [];
   for (const [index, table] of inputs.tables.entries()) {
-    // Process tables one by one to avoid hitting API rate limits.
+    // Process tables one by one. Retries are handled inside analyzeSingleTable.
     const result = await analyzeSingleTable(table, inputs.rules, inputs.history);
     if (result && result.issues_detected) {
       allIssues.push(...result.issues_detected);
     }
     
-    // Add a small delay between requests to respect API rate limits,
+    // Add a longer delay between requests to proactively respect API rate limits,
     // but don't delay after the very last request.
     if (index < inputs.tables.length - 1) {
-      await delay(1000); // 1-second delay
+      await delay(2000); // 2-second delay
     }
   }
   
@@ -190,13 +231,17 @@ export const generateReportSummary = async (issues: Issue[]): Promise<string> =>
     \`\`\`
   `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      temperature: 0.2,
-    },
-  });
-
-  return response.text;
+  try {
+      const response = await generateContentWithRetry(
+        'gemini-2.5-flash',
+        prompt,
+        {
+          temperature: 0.2,
+        }
+      );
+      return response.text;
+  } catch (e) {
+      console.error("Failed to generate summary report after retries:", e);
+      return "### Report Generation Failed\n\nAn error occurred while generating the summary report, likely due to API rate limits or server load. The detailed issue list below is complete, but the AI-powered summary could not be created at this time. Please try the analysis again later.";
+  }
 };

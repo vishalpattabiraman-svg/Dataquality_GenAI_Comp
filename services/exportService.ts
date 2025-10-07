@@ -60,7 +60,7 @@ declare global {
  * @param timeout The maximum time to wait in milliseconds.
  * @returns A promise that resolves with the library object.
  */
-const waitForGlobal = <T>(name: string, timeout = 3000): Promise<T> => {
+const waitForGlobal = <T>(name: string, timeout = 5000): Promise<T> => {
     return new Promise((resolve, reject) => {
         const startTime = Date.now();
         const check = () => {
