@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { analyzeDataQuality } from './services/geminiService';
+import { analyzeDataQuality, generateReportSummary } from './services/geminiService';
 import { DataQualityInputs, Issue } from './types';
 import InputForm from './components/InputForm';
 import ResultsDisplay from './components/ResultsDisplay';
@@ -9,15 +9,31 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [issues, setIssues] = useState<Issue[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<string | null>(null);
+  const [isReportLoading, setIsReportLoading] = useState<boolean>(false);
 
   const handleAnalyze = async (inputs: DataQualityInputs) => {
     setIsLoading(true);
     setError(null);
     setIssues(null);
+    setReport(null);
 
     try {
       const result = await analyzeDataQuality(inputs);
       setIssues(result.issues_detected);
+
+      if (result.issues_detected && result.issues_detected.length > 0) {
+        setIsReportLoading(true);
+        try {
+          const summaryReport = await generateReportSummary(result.issues_detected);
+          setReport(summaryReport);
+        } catch (reportError) {
+          console.error("Failed to generate summary report:", reportError);
+        } finally {
+          setIsReportLoading(false);
+        }
+      }
+
     } catch (err) {
       setError('An error occurred while analyzing the data. Please check your inputs and try again.');
       console.error(err);
@@ -55,7 +71,13 @@ const App: React.FC = () => {
             <InputForm onAnalyze={handleAnalyze} isLoading={isLoading} />
           </div>
           <div>
-            <ResultsDisplay isLoading={isLoading} error={error} issues={issues} />
+            <ResultsDisplay
+              isLoading={isLoading}
+              error={error}
+              issues={issues}
+              report={report}
+              isReportLoading={isReportLoading}
+            />
           </div>
         </div>
       </main>

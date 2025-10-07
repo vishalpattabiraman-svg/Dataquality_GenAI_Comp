@@ -2,10 +2,40 @@ import React, { useState, useMemo, lazy, Suspense, useEffect } from 'react';
 import { Issue } from '../types';
 import IssueCard from './IssueCard';
 import Loader from './Loader';
-import { SearchIcon, ErrorIcon, CheckCircleIcon, TableIcon, ChevronDownIcon, DashboardIcon, ListIcon, XIcon, ColumnIcon } from './Icons';
+import { SearchIcon, ErrorIcon, CheckCircleIcon, TableIcon, ChevronDownIcon, DashboardIcon, ListIcon, XIcon, ColumnIcon, ChatIcon, ExportIcon, PresentationIcon } from './Icons';
 import SeverityBadge from './SeverityBadge';
+import { generatePdfReport, generatePptxReport } from '../services/exportService';
 
 const DashboardView = lazy(() => import('./DashboardView'));
+const ChatView = lazy(() => import('./ChatView'));
+
+const SimpleMarkdownRenderer: React.FC<{ text: string }> = ({ text }) => {
+  const lines = text.split('\n').filter(line => line.trim() !== '');
+
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed">
+      {lines.map((line, index) => {
+        if (line.startsWith('### ')) {
+          return <h3 key={index} className="text-lg font-semibold mt-4 mb-2 text-brand-primary dark:text-brand-secondary">{line.substring(4)}</h3>;
+        }
+        if (line.startsWith('## ')) {
+          return <h2 key={index} className="text-xl font-bold mt-5 mb-3">{line.substring(3)}</h2>;
+        }
+        if (line.startsWith('# ')) {
+          return <h1 key={index} className="text-2xl font-extrabold mt-6 mb-4">{line.substring(2)}</h1>;
+        }
+        if (line.match(/^[-*]\s+/)) {
+          return (
+            <ul key={index} className="list-disc list-outside pl-5 -mt-2">
+              <li className="pl-2">{line.replace(/^[-*]\s+/, '')}</li>
+            </ul>
+          );
+        }
+        return <p key={index}>{line}</p>;
+      })}
+    </div>
+  );
+};
 
 /**
  * Extracts the simple table name from a fully qualified name.
@@ -183,14 +213,18 @@ interface ResultsDisplayProps {
   isLoading: boolean;
   error: string | null;
   issues: Issue[] | null;
+  report: string | null;
+  isReportLoading: boolean;
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ isLoading, error, issues }) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ isLoading, error, issues, report, isReportLoading }) => {
     const [activeSeverityFilter, setActiveSeverityFilter] = useState<Issue['severity'] | 'All'>('All');
     const [activeTypeFilter, setActiveTypeFilter] = useState<string | 'All'>('All');
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'dashboard' | 'list'>('dashboard');
     const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isReportExpanded, setIsReportExpanded] = useState(false);
 
     const issuesByTable = useMemo(() => {
         if (!issues) return {};
@@ -215,6 +249,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ isLoading, error, issue
             setActiveTypeFilter('All');
             setSelectedTable(null);
             setViewMode('dashboard');
+            setIsReportExpanded(false);
         }
     }, [issues, issuesByTable]);
 
@@ -292,14 +327,49 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ isLoading, error, issue
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Analysis Summary</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{issues.length} total issues found.</p>
                     </div>
-                    <div className="flex items-center gap-2 p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                        <button onClick={() => setViewMode('dashboard')} className={`px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors ${viewMode === 'dashboard' ? 'bg-white dark:bg-gray-800 shadow' : 'text-gray-600 dark:text-gray-300'}`}>
-                            <DashboardIcon className="w-4 h-4" /> Dashboard
+                    <div className="flex items-center gap-2 flex-wrap">
+                         <button 
+                            onClick={() => generatePdfReport(issues)} 
+                            disabled={!issues || issues.length === 0}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Export report to PDF"
+                        >
+                            <ExportIcon className="w-4 h-4" />
+                            <span>Export PDF</span>
                         </button>
-                        <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 shadow' : 'text-gray-600 dark:text-gray-300'}`}>
-                            <ListIcon className="w-4 h-4" /> List View
+                        <button 
+                            onClick={() => generatePptxReport(issues)} 
+                            disabled={!issues || issues.length === 0}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Export report to slides"
+                        >
+                            <PresentationIcon className="w-4 h-4" />
+                            <span>Export Slides</span>
                         </button>
+                        <div className="flex items-center gap-2 p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                            <button onClick={() => setViewMode('dashboard')} className={`px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors ${viewMode === 'dashboard' ? 'bg-white dark:bg-gray-800 shadow' : 'text-gray-600 dark:text-gray-300'}`}>
+                                <DashboardIcon className="w-4 h-4" /> Dashboard
+                            </button>
+                            <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 shadow' : 'text-gray-600 dark:text-gray-300'}`}>
+                                <ListIcon className="w-4 h-4" /> List View
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                <div className="my-6 p-4 bg-brand-light dark:bg-blue-900/20 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left shadow-inner">
+                  <div>
+                    <h4 className="font-semibold text-brand-primary dark:text-blue-200">Have questions about these results?</h4>
+                    <p className="text-sm text-blue-800/80 dark:text-blue-300/80 mt-1">Our AI assistant can help you understand the findings.</p>
+                  </div>
+                  <button
+                    onClick={() => setIsChatOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-accent rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-all flex-shrink-0"
+                    aria-label="Start chat with AI assistant"
+                  >
+                    <ChatIcon className="w-5 h-5" />
+                    Start Chat
+                  </button>
                 </div>
 
                 {viewMode === 'dashboard' ? (
@@ -361,6 +431,45 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ isLoading, error, issue
                         </div>
                     </>
                 )}
+
+                {(report || isReportLoading) && (
+                    <div className="mt-8 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-800/50">
+                        <button
+                            onClick={() => setIsReportExpanded(!isReportExpanded)}
+                            className="w-full text-left p-4 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-opacity-50"
+                            aria-expanded={isReportExpanded}
+                        >
+                            <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                                AI-Generated Report & Appendix
+                            </h3>
+                            <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isReportExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                        </button>
+
+                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isReportExpanded ? 'max-h-[5000px]' : 'max-h-0'}`}>
+                            <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700/50">
+                            <div className="pt-4">
+                                {isReportLoading && (
+                                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    <span>Generating summary report...</span>
+                                </div>
+                                )}
+                                {report && <SimpleMarkdownRenderer text={report} />}
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <Suspense fallback={null}>
+                    <ChatView 
+                        issues={issues} 
+                        isOpen={isChatOpen} 
+                        onClose={() => setIsChatOpen(false)} 
+                    />
+                </Suspense>
             </div>
         )
     };

@@ -22,7 +22,7 @@ interface ArcData {
 
 const SunburstChart: React.FC<SunburstChartProps> = ({
   data,
-  onSegmentClick = () => {},
+  onSegmentClick = (_node: SunburstData) => {},
   width = 256,
   height = 256,
 }) => {

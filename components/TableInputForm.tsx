@@ -9,7 +9,6 @@ interface TableInputFormProps {
   onRemove: (id: string) => void;
 }
 
-// Fix: Pass `table.id` as `tableId` prop to make the component's dependencies explicit and fix scoping issue.
 const InputArea: React.FC<{
   id: keyof Omit<TableInput, 'id' | 'name'>;
   tableId: string;
