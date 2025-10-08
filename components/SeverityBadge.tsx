@@ -8,9 +8,9 @@ interface SeverityBadgeProps {
 
 const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity, count }) => {
   const severityClasses = {
-    High: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-    Medium: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-    Low: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    High: 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300',
+    Medium: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300',
+    Low: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300',
   };
 
   return (

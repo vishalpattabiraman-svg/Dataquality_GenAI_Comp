@@ -31,21 +31,12 @@ declare global {
   }
 }
 
-// PptxGenJS, accessed via the window object
-declare class PptxGenJS {
-  constructor();
-  layout: string;
-  defineSlideMaster(options: any): void;
-  addSlide(options?: { masterName?: string }): any;
-  writeFile(options: { fileName: string }): Promise<string>;
-  shapes: any;
-}
+// PptxGenJS is now imported dynamically, so no global declaration is needed.
 declare global {
   interface Window {
     jspdf: {
       jsPDF: new (options?: any) => jspdf.jsPDF;
     };
-    PptxGenJS: (new () => PptxGenJS) | { default: new () => PptxGenJS };
   }
 }
 
@@ -60,7 +51,7 @@ declare global {
  * @param timeout The maximum time to wait in milliseconds.
  * @returns A promise that resolves with the library object.
  */
-const waitForGlobal = <T>(name: string, timeout = 5000): Promise<T> => {
+const waitForGlobal = <T>(name: string, timeout = 20000): Promise<T> => {
     return new Promise((resolve, reject) => {
         const startTime = Date.now();
         const check = () => {
@@ -78,17 +69,17 @@ const waitForGlobal = <T>(name: string, timeout = 5000): Promise<T> => {
 };
 
 const BRAND_COLORS = {
-  primary: '#1e3a8a',
-  secondary: '#3b82f6',
-  dark: '#1e293b',
-  textDark: '#334155',
-  textLight: '#64748b',
+  primary: '#334155',    // slate-700
+  secondary: '#0ea5e9',   // sky-500
+  dark: '#0f172a',       // slate-900
+  textDark: '#334155',   // slate-700
+  textLight: '#64748b',  // slate-500
 };
 
 const SEVERITY_COLORS_HEX = {
-  High: '#ef4444',
-  Medium: '#f97316',
-  Low: '#22c55e',
+  High: '#e11d48',    // rose-600
+  Medium: '#f59e0b',  // amber-500
+  Low: '#10b981',     // emerald-500
 };
 
 const groupIssuesByTable = (issues: Issue[]): Record<string, Issue[]> => {
@@ -116,7 +107,9 @@ export const generatePdfReport = async (issues: Issue[]): Promise<void> => {
     const doc = new jsPDFConstructor({ orientation: 'p', unit: 'mm', format: 'a4' });
     const pageHeight = doc.internal.pageSize.getHeight();
     const pageWidth = doc.internal.pageSize.getWidth();
-    let yPos = 0;
+    const leftMargin = 15;
+    const rightMargin = 15;
+    const effectiveWidth = pageWidth - leftMargin - rightMargin;
 
     const addHeaderAndFooter = () => {
       const pageCount = (doc as any).internal.getNumberOfPages();
@@ -147,7 +140,7 @@ export const generatePdfReport = async (issues: Issue[]): Promise<void> => {
 
     // --- Page 2: Summary Page ---
     doc.addPage();
-    yPos = 25;
+    let yPos = 25;
     doc.setFontSize(22);
     doc.setTextColor(BRAND_COLORS.dark);
     doc.setFont('helvetica', 'bold');
@@ -176,30 +169,59 @@ export const generatePdfReport = async (issues: Issue[]): Promise<void> => {
 
     (doc as any).autoTable(autoTableOptions);
 
-    yPos = doc.lastAutoTable.finalY + 20;
+    // --- Page 3: Table of Contents Placeholder ---
+    doc.addPage();
+    const tocPage = doc.internal.getCurrentPageInfo().pageNumber;
+    const tocEntries: { level: 1 | 2; title: string; page: number }[] = [];
 
     // --- Detailed Findings Pages ---
     const issuesByTable = groupIssuesByTable(issues);
 
     Object.keys(issuesByTable).forEach(tableName => {
       doc.addPage();
+      const tableStartPage = doc.internal.getCurrentPageInfo().pageNumber;
+      tocEntries.push({ level: 1, title: tableName, page: tableStartPage });
+
       yPos = 25;
 
-      doc.setFontSize(20);
-      doc.setTextColor(BRAND_COLORS.primary);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Table: ${tableName}`, 15, yPos);
-      yPos += 12;
+      const drawTableHeader = (isContinued = false) => {
+        const title = isContinued ? `Table: ${tableName} (continued)` : `Table: ${tableName}`;
+        
+        doc.setFontSize(20);
+        doc.setTextColor(BRAND_COLORS.primary);
+        doc.setFont('helvetica', 'bold');
+        const titleLines = doc.splitTextToSize(title, effectiveWidth);
+        doc.text(titleLines, leftMargin, yPos);
+        const titleHeight = titleLines.length * 8; 
+        yPos += titleHeight + 4;
+      };
+
+      drawTableHeader();
 
       issuesByTable[tableName].forEach(issue => {
-        const descriptionLines = doc.splitTextToSize(issue.description, pageWidth - 45);
-        const recommendationLines = doc.splitTextToSize(issue.recommendation, pageWidth - 45);
-        const estimatedHeight = 20 + (descriptionLines.length * 5) + (recommendationLines.length * 5);
+        const contentStartX = 58;
+        const contentWidth = pageWidth - contentStartX - rightMargin;
+        
+        const descriptionLines = doc.splitTextToSize(issue.description, contentWidth);
+        const causeLines = doc.splitTextToSize(issue.possible_cause, contentWidth);
+        const recommendationLines = doc.splitTextToSize(issue.recommendation, contentWidth);
+        
+        const lineHeight = 5;
+        const sectionSpacing = 3;
+        const headerHeight = 10;
+        const footerHeight = 13;
 
-        if (yPos + estimatedHeight > pageHeight - 25) {
+        const calcSectionHeight = (lines: string[]) => (lines.length * lineHeight) + sectionSpacing;
+        const requiredHeight = headerHeight + calcSectionHeight(descriptionLines) + calcSectionHeight(causeLines) + calcSectionHeight(recommendationLines) + footerHeight;
+
+        if (yPos + requiredHeight > pageHeight - 20) {
           doc.addPage();
           yPos = 25;
+          drawTableHeader(true);
         }
+
+        const issuePage = doc.internal.getCurrentPageInfo().pageNumber;
+        tocEntries.push({ level: 2, title: issue.type, page: issuePage });
 
         doc.setFontSize(14);
         doc.setTextColor(BRAND_COLORS.dark);
@@ -216,7 +238,7 @@ export const generatePdfReport = async (issues: Issue[]): Promise<void> => {
         doc.setFont('helvetica', 'bold');
         doc.text(severityText, pageWidth - 15 - (textWidth / 2), yPos - 1, { align: 'center' });
 
-        yPos += 10;
+        yPos += headerHeight;
 
         const addDetailText = (label: string, valueLines: string[]) => {
           doc.setFontSize(11);
@@ -225,18 +247,67 @@ export const generatePdfReport = async (issues: Issue[]): Promise<void> => {
           doc.text(label, 20, yPos);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(BRAND_COLORS.textDark);
-          doc.text(valueLines, 58, yPos);
-          yPos += (valueLines.length * 5) + 3;
+          doc.text(valueLines, contentStartX, yPos);
+          yPos += calcSectionHeight(valueLines);
         };
 
         addDetailText('Description:', descriptionLines);
-        addDetailText('Possible Cause:', doc.splitTextToSize(issue.possible_cause, pageWidth - 45));
+        addDetailText('Possible Cause:', causeLines);
         addDetailText('Recommendation:', recommendationLines);
+        
         yPos += 5;
         doc.setDrawColor('#e5e7eb');
         doc.line(15, yPos, pageWidth - 15, yPos);
         yPos += 8;
       });
+    });
+
+    // --- Render Table of Contents ---
+    doc.setPage(tocPage);
+    let tocYPos = 25;
+    doc.setFontSize(22);
+    doc.setTextColor(BRAND_COLORS.dark);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Table of Contents', 15, tocYPos);
+    tocYPos += 15;
+
+    doc.setFont('helvetica', 'normal');
+    const bottomMargin = 20;
+
+    tocEntries.forEach(entry => {
+        if (tocYPos > pageHeight - bottomMargin) return; // Simple overflow protection
+
+        const title = entry.title;
+        const pageNumStr = entry.page.toString();
+        const indent = entry.level === 1 ? 0 : 5;
+        const xPos = leftMargin + indent;
+
+        doc.setFontSize(entry.level === 1 ? 12 : 10);
+        doc.setFont('helvetica', entry.level === 1 ? 'bold' : 'normal');
+        doc.setTextColor(BRAND_COLORS.dark);
+
+        const maxTitleWidth = effectiveWidth - indent - 20; 
+        const truncatedTitle = doc.splitTextToSize(title, maxTitleWidth)[0];
+
+        // Add clickable link to the page
+        doc.textWithLink(truncatedTitle, xPos, tocYPos, { pageNumber: entry.page });
+
+        const titleWidth = doc.getTextWidth(truncatedTitle);
+        const dotWidth = doc.getTextWidth('.');
+        const pageNumWidth = doc.getTextWidth(pageNumStr);
+        const spaceForDots = effectiveWidth - indent - titleWidth - pageNumWidth;
+
+        if (spaceForDots > 0) {
+            const numDots = Math.floor(spaceForDots / dotWidth);
+            const dots = '.'.repeat(numDots);
+            doc.setTextColor(BRAND_COLORS.textLight);
+            doc.text(dots, xPos + titleWidth, tocYPos);
+        }
+
+        doc.setTextColor(BRAND_COLORS.dark);
+        doc.textWithLink(pageNumStr, pageWidth - rightMargin, tocYPos, { pageNumber: entry.page, align: 'right' });
+
+        tocYPos += entry.level === 1 ? 8 : 6;
     });
 
     addHeaderAndFooter();
@@ -248,26 +319,20 @@ export const generatePdfReport = async (issues: Issue[]): Promise<void> => {
 };
 
 
-// --- POWERPOINT EXPORT (Reimagined & Stabilized) ---
+// --- POWERPOINT EXPORT (Reimagined & Stabilized with Dynamic Import) ---
 
 export const generatePptxReport = async (issues: Issue[]): Promise<void> => {
   try {
-    const PptxGenJSConstructor = await waitForGlobal<any>('PptxGenJS');
+    // Dynamically import the library from a reliable ESM CDN.
+    // This is far more robust than waiting for a global script to load.
+    const PptxGenJSModule = await import('https://esm.sh/pptxgenjs@3.12.0');
+    const PptxGenJS = PptxGenJSModule.default;
 
-    let PptxGenJS_;
-    if (typeof PptxGenJSConstructor === 'function') {
-      // Case 1: The global is the constructor itself (standard for this CDN script)
-      PptxGenJS_ = PptxGenJSConstructor;
-    } else if (PptxGenJSConstructor && typeof PptxGenJSConstructor.default === 'function') {
-      // Case 2: The global is a module object with a 'default' export
-      PptxGenJS_ = PptxGenJSConstructor.default;
-    } else {
-      // If neither, the library is not loaded correctly.
-      console.error("Unrecognized PptxGenJS library format:", PptxGenJSConstructor);
-      throw new Error("PptxGenJS library is loaded but is not in a recognized format.");
+    if (!PptxGenJS) {
+      throw new Error("PptxGenJS library could not be initialized from the imported module.");
     }
 
-    const pptx = new PptxGenJS_();
+    const pptx = new PptxGenJS();
     pptx.layout = 'LAYOUT_WIDE';
 
     // --- Define Master Slide ---
@@ -275,19 +340,19 @@ export const generatePptxReport = async (issues: Issue[]): Promise<void> => {
       title: 'MASTER_SLIDE',
       background: { color: 'F1F5F9' },
       objects: [
-        { rect: { x: 0, y: 0, w: '100%', h: 0.5, fill: { color: BRAND_COLORS.primary } } },
+        { rect: { x: 0, y: 0, w: '100%', h: 0.5, fill: { color: BRAND_COLORS.primary.substring(1) } } },
         { text: { text: 'Data Quality Analysis Report', options: { x: 0.5, y: 0.1, w: '90%', fontFace: 'Arial', fontSize: 14, color: 'FFFFFF' } } },
       ],
-      slideNumber: { x: 0.5, y: '95%', fontFace: 'Arial', fontSize: 10, color: BRAND_COLORS.primary },
+      slideNumber: { x: 0.5, y: '95%', fontFace: 'Arial', fontSize: 10, color: BRAND_COLORS.primary.substring(1) },
     });
 
-    const slideTitleStyle = { x: 0.5, y: 0.6, w: '90%', h: 0.75, fontSize: 32, fontFace: 'Arial', bold: true, color: BRAND_COLORS.primary };
+    const slideTitleStyle = { x: 0.5, y: 0.6, w: '90%', h: 0.75, fontSize: 32, fontFace: 'Arial', bold: true, color: BRAND_COLORS.primary.substring(1) };
 
     // --- Slide 1: Title Slide ---
     const titleSlide = pptx.addSlide();
     titleSlide.background = { color: 'FFFFFF' };
-    titleSlide.addText('Data Quality Analysis Report', { x: 0, y: 2.5, w: '100%', h: 1, fontSize: 44, bold: true, color: BRAND_COLORS.primary, align: 'center' });
-    titleSlide.addText(`Presented by Data Quality Bot`, { x: 0, y: 3.5, w: '100%', h: 0.5, fontSize: 20, color: BRAND_COLORS.secondary, align: 'center' });
+    titleSlide.addText('Data Quality Analysis Report', { x: 0, y: 2.5, w: '100%', h: 1, fontSize: 44, bold: true, color: BRAND_COLORS.primary.substring(1), align: 'center' });
+    titleSlide.addText(`Presented by Data Quality Bot`, { x: 0, y: 3.5, w: '100%', h: 0.5, fontSize: 20, color: BRAND_COLORS.secondary.substring(1), align: 'center' });
 
     // --- Slide 2: Summary Slide ---
     const summarySlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
@@ -299,11 +364,11 @@ export const generatePptxReport = async (issues: Issue[]): Promise<void> => {
     }, { High: 0, Medium: 0, Low: 0 } as Record<Issue['severity'], number>);
 
     const summaryTableRows = [
-      [{ text: 'Metric', options: { bold: true, fill: BRAND_COLORS.primary, color: 'FFFFFF', align: 'center' } }, { text: 'Count', options: { bold: true, fill: BRAND_COLORS.primary, color: 'FFFFFF', align: 'center' } }],
+      [{ text: 'Metric', options: { bold: true, fill: { color: BRAND_COLORS.primary.substring(1) }, color: 'FFFFFF', align: 'center' } }, { text: 'Count', options: { bold: true, fill: { color: BRAND_COLORS.primary.substring(1) }, color: 'FFFFFF', align: 'center' } }],
       ['Total Issues Found', { text: issues.length, options: { bold: true, align: 'center' } }],
-      ['High Severity Issues', { text: severityCounts.High, options: { color: SEVERITY_COLORS_HEX.High, bold: true, align: 'center' } }],
-      ['Medium Severity Issues', { text: severityCounts.Medium, options: { color: SEVERITY_COLORS_HEX.Medium, bold: true, align: 'center' } }],
-      ['Low Severity Issues', { text: severityCounts.Low, options: { color: SEVERITY_COLORS_HEX.Low, bold: true, align: 'center' } }],
+      ['High Severity Issues', { text: severityCounts.High, options: { color: SEVERITY_COLORS_HEX.High.substring(1), bold: true, align: 'center' } }],
+      ['Medium Severity Issues', { text: severityCounts.Medium, options: { color: SEVERITY_COLORS_HEX.Medium.substring(1), bold: true, align: 'center' } }],
+      ['Low Severity Issues', { text: severityCounts.Low, options: { color: SEVERITY_COLORS_HEX.Low.substring(1), bold: true, align: 'center' } }],
     ];
     summarySlide.addTable(summaryTableRows, { x: 1, y: 1.8, w: 8, rowH: 0.5, colW: [4, 4], border: { type: 'solid', pt: 1, color: 'FFFFFF' }, autoPage: false });
 
@@ -312,19 +377,19 @@ export const generatePptxReport = async (issues: Issue[]): Promise<void> => {
 
     Object.keys(issuesByTable).forEach(tableName => {
       const dividerSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-      dividerSlide.addText(`Table: ${tableName}`, { x: 0, y: 0, w: '100%', h: '100%', align: 'center', valign: 'middle', fontSize: 40, bold: true, color: BRAND_COLORS.secondary });
+      dividerSlide.addText(`Table: ${tableName}`, { x: 0, y: 0, w: '100%', h: '100%', align: 'center', valign: 'middle', fontSize: 40, bold: true, color: BRAND_COLORS.secondary.substring(1) });
 
       issuesByTable[tableName].forEach(issue => {
         const issueSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
         issueSlide.addText(issue.type, { ...slideTitleStyle, fontSize: 24, h: 0.5 });
 
-        const severityColor = SEVERITY_COLORS_HEX[issue.severity];
+        const severityColor = SEVERITY_COLORS_HEX[issue.severity].substring(1);
         issueSlide.addShape((pptx.shapes as any).RECTANGLE, { x: 11.5, y: 0.6, w: 1.5, h: 0.5, fill: { color: severityColor } });
         issueSlide.addText(issue.severity, { x: 11.5, y: 0.6, w: 1.5, h: 0.5, align: 'center', color: 'FFFFFF', bold: true, fontSize: 16 });
 
         const addContentBox = (title: string, text: string, y: number) => {
-          issueSlide.addText(title, { x: 0.5, y: y, w: 4, h: 0.4, fontFace: 'Arial', bold: true, color: BRAND_COLORS.primary, fontSize: 16 });
-          issueSlide.addText(text, { x: 0.5, y: y + 0.4, w: '90%', h: 1.2, fontFace: 'Arial', color: BRAND_COLORS.textDark, fontSize: 14 });
+          issueSlide.addText(title, { x: 0.5, y: y, w: 4, h: 0.4, fontFace: 'Arial', bold: true, color: BRAND_COLORS.primary.substring(1), fontSize: 16 });
+          issueSlide.addText(text, { x: 0.5, y: y + 0.4, w: '90%', h: 1.2, fontFace: 'Arial', color: BRAND_COLORS.textDark.substring(1), fontSize: 14, fit: 'shrink' });
         };
 
         addContentBox('Description', issue.description, 1.5);
@@ -336,6 +401,6 @@ export const generatePptxReport = async (issues: Issue[]): Promise<void> => {
     pptx.writeFile({ fileName: 'Data-Quality-Report.pptx' });
   } catch (error) {
     console.error("Failed to generate PowerPoint report:", error);
-    alert("Could not generate PowerPoint report. The 'PptxGenJS' library failed to load or initialize correctly. Please check your network connection and try again.");
+    alert("Could not generate PowerPoint report. The required library failed to load, which may be due to a network issue. Please check your connection and try again.");
   }
 };

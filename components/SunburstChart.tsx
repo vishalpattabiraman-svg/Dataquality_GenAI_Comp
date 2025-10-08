@@ -149,7 +149,7 @@ const SunburstChart: React.FC<SunburstChartProps> = ({
         y={centerY}
         textAnchor="middle"
         dy=".3em"
-        className="text-xs font-semibold fill-current text-gray-700 dark:text-gray-200 pointer-events-none"
+        className="text-xs font-semibold fill-current text-slate-700 dark:text-slate-200 pointer-events-none"
       >
         {centerText}
       </text>

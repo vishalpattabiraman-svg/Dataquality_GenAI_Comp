@@ -19,14 +19,14 @@ const InputArea: React.FC<{
   rows?: number;
 }> = ({ id, tableId, label, placeholder, value, onChange, rows = 4 }) => (
   <div>
-    <label htmlFor={`${id}-${tableId}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    <label htmlFor={`${id}-${tableId}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
       {label}
     </label>
     <textarea
       id={`${id}-${tableId}`}
       name={id}
       rows={rows}
-      className="block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:ring-brand-accent focus:border-brand-accent transition"
+      className="block w-full shadow-sm sm:text-sm border-slate-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white focus:ring-brand-accent focus:border-brand-accent transition"
       placeholder={placeholder}
       value={value}
       onChange={onChange}
@@ -44,13 +44,13 @@ const TableInputForm: React.FC<TableInputFormProps> = ({ table, index, onChange,
   };
 
   return (
-    <div className="border border-gray-300 dark:border-gray-700 rounded-lg">
-      <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-t-lg">
+    <div className="border border-slate-300 dark:border-slate-700 rounded-lg">
+      <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-t-lg">
         <div className="flex items-center flex-grow">
            <button
             type="button"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
+            className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white"
             aria-expanded={!isCollapsed}
            >
             <svg className={`w-5 h-5 transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
@@ -61,13 +61,13 @@ const TableInputForm: React.FC<TableInputFormProps> = ({ table, index, onChange,
             value={table.name}
             onChange={handleChange}
             placeholder="Enter table name"
-            className="font-semibold text-gray-800 dark:text-white bg-transparent border-none focus:ring-0 w-full ml-2"
+            className="font-semibold text-slate-800 dark:text-white bg-transparent border-none focus:ring-0 w-full ml-2"
            />
         </div>
         <button
           type="button"
           onClick={() => onRemove(table.id)}
-          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
+          className="text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 p-1 rounded-full hover:bg-rose-100 dark:hover:bg-rose-900/50"
           aria-label="Remove table"
         >
           <TrashIcon className="w-5 h-5" />

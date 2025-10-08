@@ -18,14 +18,14 @@ const InputArea: React.FC<{
   rows?: number;
 }> = ({ id, label, placeholder, value, onChange, rows = 3 }) => (
   <div>
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    <label htmlFor={id} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
       {label}
     </label>
     <textarea
       id={id}
       name={id}
       rows={rows}
-      className="block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:ring-brand-accent focus:border-brand-accent transition"
+      className="block w-full shadow-sm sm:text-sm border-slate-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white focus:ring-brand-accent focus:border-brand-accent transition"
       placeholder={placeholder}
       value={value}
       onChange={onChange}
@@ -242,19 +242,19 @@ CREATE TABLE customer_orders (
   };
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg">
+    <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-slate-900 p-6 rounded-lg shadow-lg border border-slate-200 dark:border-slate-800">
       <div className="text-center">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Provide Data Context</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Add tables manually or generate them from SQL and statistics.</p>
+        <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Provide Data Context</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Add tables manually or generate them from SQL and statistics.</p>
       </div>
 
-      <div className="space-y-4 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-800 dark:text-white">Import from SQL</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 -mt-2">
+      <div className="space-y-4 border border-slate-300 dark:border-slate-700 rounded-lg p-4">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-white">Import from SQL</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 -mt-2">
           Upload a .sql file to automatically generate table structures.
         </p>
         <div>
-          <label htmlFor="sql-upload" className="w-full cursor-pointer inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-accent hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition">
+          <label htmlFor="sql-upload" className="w-full cursor-pointer inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-accent hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition">
             <UploadIcon className="w-5 h-5 mr-2 -ml-1" />
             Upload SQL File
           </label>
@@ -268,13 +268,13 @@ CREATE TABLE customer_orders (
         </div>
       </div>
 
-      <div className="space-y-4 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-800 dark:text-white">Import Column Statistics</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 -mt-2">
+      <div className="space-y-4 border border-slate-300 dark:border-slate-700 rounded-lg p-4">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-white">Import Column Statistics</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 -mt-2">
           Upload a CSV file with statistics. Must include 'Table' and 'Column' headers.
         </p>
         <div>
-          <label htmlFor="stats-upload" className="w-full cursor-pointer inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-accent hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition">
+          <label htmlFor="stats-upload" className="w-full cursor-pointer inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-accent hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition">
             <UploadIcon className="w-5 h-5 mr-2 -ml-1" />
             Upload Statistics CSV
           </label>
@@ -303,14 +303,14 @@ CREATE TABLE customer_orders (
       <button
         type="button"
         onClick={addTable}
-        className="w-full inline-flex justify-center items-center px-4 py-2 border border-dashed border-gray-400 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition"
+        className="w-full inline-flex justify-center items-center px-4 py-2 border border-dashed border-slate-400 dark:border-slate-600 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition"
       >
         <PlusIcon className="w-5 h-5 mr-2 -ml-1" />
         Add Another Table
       </button>
       
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-6">
-        <h3 className="text-lg font-medium text-gray-800 dark:text-white">Global Context</h3>
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-6 space-y-6">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-white">Global Context</h3>
         <InputArea
           id="rules"
           label="Global business rules (optional)"
@@ -330,7 +330,7 @@ CREATE TABLE customer_orders (
       <button
         type="submit"
         disabled={isLoading || inputs.tables.length === 0}
-        className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-brand-primary hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent disabled:bg-gray-400 disabled:cursor-not-allowed dark:focus:ring-offset-gray-900 transition-all duration-300"
+        className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-brand-primary hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent disabled:bg-slate-400 disabled:cursor-not-allowed dark:bg-brand-secondary dark:hover:bg-sky-600 dark:focus:ring-offset-slate-900 transition-all duration-300"
       >
         {isLoading ? (
           <>

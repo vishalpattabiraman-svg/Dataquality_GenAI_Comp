@@ -186,29 +186,25 @@ const analyzeSingleTable = async (table: TableInput, globalRules: string, histor
   }
 };
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// The main function, now refactored to orchestrate sequential calls
+// The main function, now refactored to orchestrate parallel calls
 export const analyzeDataQuality = async (inputs: DataQualityInputs): Promise<GeminiApiResponse> => {
   // If there are no tables, return immediately.
   if (!inputs.tables || inputs.tables.length === 0) {
     return { issues_detected: [] };
   }
 
-  const allIssues: Issue[] = [];
-  for (const [index, table] of inputs.tables.entries()) {
-    // Process tables one by one. Retries are handled inside analyzeSingleTable.
-    const result = await analyzeSingleTable(table, inputs.rules, inputs.history);
-    if (result && result.issues_detected) {
-      allIssues.push(...result.issues_detected);
-    }
-    
-    // Add a longer delay between requests to proactively respect API rate limits,
-    // but don't delay after the very last request.
-    if (index < inputs.tables.length - 1) {
-      await delay(2000); // 2-second delay
-    }
-  }
+  // Create an array of promises, one for each table analysis.
+  // This allows us to run the analyses in parallel, which is much faster.
+  const analysisPromises = inputs.tables.map(table =>
+    analyzeSingleTable(table, inputs.rules, inputs.history)
+  );
+  
+  // Wait for all analyses to complete. Promise.all executes them concurrently.
+  // The built-in retry logic in `analyzeSingleTable` will handle rate limiting.
+  const results = await Promise.all(analysisPromises);
+  
+  // Flatten the array of results (from each table) into a single list of issues.
+  const allIssues: Issue[] = results.flatMap(result => result.issues_detected);
   
   return { issues_detected: allIssues };
 };

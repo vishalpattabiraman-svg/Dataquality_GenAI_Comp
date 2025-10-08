@@ -64,7 +64,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ issues, onIssueTypeSelect
     return (
         <div className="w-full space-y-8">
             <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Table Health Overview</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Table Health Overview</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {sortedTableNames.map(tableName => (
                         <TableHealthCard
@@ -78,7 +78,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ issues, onIssueTypeSelect
             </div>
 
             <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Issue Hotspots</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Issue Hotspots</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                      {sortedIssueTypes.map(issueType => {
                         const groupIssues = issuesByType[issueType];

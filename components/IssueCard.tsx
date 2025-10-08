@@ -10,11 +10,11 @@ interface IssueCardProps {
 
 const InfoSection: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
     <div className="pt-3">
-        <h4 className="flex items-center text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1">
+        <h4 className="flex items-center text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">
             {icon}
             <span className="ml-2">{title}</span>
         </h4>
-        <p className="text-sm text-gray-800 dark:text-gray-400 ml-6">{children}</p>
+        <p className="text-sm text-slate-800 dark:text-slate-400 ml-6">{children}</p>
     </div>
 );
 
@@ -28,7 +28,7 @@ const IssueCard: React.FC<IssueCardProps> = ({ issue, isInitiallyExpanded = fals
   };
 
   return (
-    <div className={`bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm transition-shadow duration-300 hover:shadow-md ${severityStyles[issue.severity]}`}>
+    <div className={`bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm transition-shadow duration-300 hover:shadow-md ${severityStyles[issue.severity]}`}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full text-left p-4 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-opacity-50 rounded-lg"
@@ -37,25 +37,25 @@ const IssueCard: React.FC<IssueCardProps> = ({ issue, isInitiallyExpanded = fals
         <div className="flex justify-between items-start">
           <div className="flex-grow pr-4">
             <h3 className="text-md font-bold text-brand-primary dark:text-brand-secondary">{issue.type}</h3>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{issue.description}</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{issue.description}</p>
           </div>
           <div className="flex flex-col items-end space-y-2 flex-shrink-0">
             <SeverityBadge severity={issue.severity} />
-            <ChevronDownIcon className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+            <ChevronDownIcon className={`w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
           </div>
         </div>
       </button>
       
       <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[500px]' : 'max-h-0'}`}>
-        <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700/50">
+        <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-700/50">
           <div className="space-y-1">
-              <InfoSection icon={<BulbIcon className="h-4 w-4 text-yellow-500" />} title="Possible Cause">
+              <InfoSection icon={<BulbIcon className="h-4 w-4 text-amber-500" />} title="Possible Cause">
                   {issue.possible_cause}
               </InfoSection>
-              <InfoSection icon={<ImpactIcon className="h-4 w-4 text-red-500" />} title="Potential Impact">
+              <InfoSection icon={<ImpactIcon className="h-4 w-4 text-rose-500" />} title="Potential Impact">
                   {issue.impact}
               </InfoSection>
-              <InfoSection icon={<WrenchIcon className="h-4 w-4 text-green-500" />} title="Recommendation">
+              <InfoSection icon={<WrenchIcon className="h-4 w-4 text-emerald-500" />} title="Recommendation">
                   {issue.recommendation}
               </InfoSection>
           </div>

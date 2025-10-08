@@ -11,14 +11,14 @@
         theme: {
           extend: {
             colors: {
-              'brand-primary': '#1e3a8a',
-              'brand-secondary': '#3b82f6',
-              'brand-light': '#dbeafe',
-              'brand-dark': '#1e293b',
-              'brand-accent': '#6366f1',
-              'severity-high': '#ef4444',
-              'severity-medium': '#f97316',
-              'severity-low': '#22c55e',
+              'brand-primary': '#334155', // slate-700
+              'brand-secondary': '#0ea5e9', // sky-500
+              'brand-light': '#f1f5f9', // slate-100
+              'brand-dark': '#0f172a', // slate-900
+              'brand-accent': '#6366f1', // indigo-500
+              'severity-high': '#e11d48', // rose-600
+              'severity-medium': '#f59e0b', // amber-500
+              'severity-low': '#10b981', // emerald-500
             },
           },
         },
@@ -26,7 +26,6 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
   <script type="importmap">
 {
   "imports": {
@@ -38,7 +37,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-100 dark:bg-brand-dark">
+  <body class="bg-slate-50 dark:bg-brand-dark">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
